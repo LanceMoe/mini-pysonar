@@ -34,7 +34,7 @@ def sz(s):
 
 
 def dp(s):
-    return map(dump, parse(s).body)
+    return list(map(dump, parse(s).body))
 
 
 def pf(file):
@@ -422,7 +422,7 @@ def invoke1(call, clo, env, stk):
             pos = bind(func.args.vararg, ts, pos)
 
     # bind keywords, collect kwarg
-    ids = map(get_id, func.args.args)
+    ids = list(map(get_id, func.args.args))
     for k in call.keywords:
         ts = infer(k.value, env, stk)
         tloc1 = lookup(k.arg, pos)
@@ -765,4 +765,4 @@ install_printer()
 
 
 # test the checker on a file
-check_file('tests/chain.py')
+check_file('tests/is_prime.py')
