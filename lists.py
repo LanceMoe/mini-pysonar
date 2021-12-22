@@ -10,7 +10,7 @@
 class PairIterator:
     def __init__(self, p):
         self.p = p
-    def next(self):
+    def __next__(self):
         if self.p == nil:
             raise StopIteration
         ret = self.p.fst
@@ -71,7 +71,7 @@ def length(ls):
 def remove(x, ls):
     ret = nil
     for y in ls:
-        if x <> y:
+        if x != y:
             ret = Pair(y, ret)
     return reverse(ret)
 
@@ -80,7 +80,7 @@ def assoc(u, v):
 
 def slist(pylist):
     ret = nil
-    for i in xrange(len(pylist)):
+    for i in range(len(pylist)):
         ret = Pair(pylist[len(pylist)-i-1], ret)
     return ret
 
@@ -123,6 +123,7 @@ def append(*lists):
 
 
 def assq(x, s):
+    print(s, type(s))
     for p in s:
         if x == first(p):
             return p
@@ -131,7 +132,7 @@ def assq(x, s):
 
 def ziplist(ls1, ls2):
     ret = nil
-    while ls1 <> nil and ls2 <> nil:
+    while ls1 != nil and ls2 != nil:
         ret = Pair(Pair(first(ls1), first(ls2)), ret)
         ls1 = rest(ls1)
         ls2 = rest(ls2)
@@ -145,7 +146,7 @@ def ext(x, v, s):
 
 def lookup(x, s):
     p = assq(x, s)
-    if p <> None:
+    if p != None:
         return rest(p)
     else:
         return None

@@ -23,7 +23,7 @@ def iter_fields(node):
     """Iterate over all existing fields, excluding 'ctx'."""
     for field in node._fields:
         try:
-            if field <> 'ctx':
+            if field != 'ctx':
                 yield field, getattr(node, field)
         except AttributeError:
             pass
@@ -58,7 +58,7 @@ def isDef(node):
 ##################################################################
 history = {}
 def putInfo(exp, item):
-    if history.has_key(exp):
+    if exp in history:
         seen = history[exp]
     else:
         seen = []
@@ -82,7 +82,7 @@ nUnknown = 0
 class UnknownType(Type):
     def __init__(self, name=None):
         global nUnknown
-        if name <> None:
+        if name != None:
             self.name = name + str(nUnknown)
         else:
             self.name = '_' + str(nUnknown)
@@ -151,11 +151,11 @@ class TupleType(Type):
         return "tup:" + str(self.elts)
     def __eq__(self, other):
         if IS(other, TupleType):
-            if len(self.elts) <> len(other.elts):
+            if len(self.elts) != len(other.elts):
                 return False
             else:
-                for i in xrange(len(self.elts)):
-                    if self.elts[i] <> other.elts[i]:
+                for i in range(len(self.elts)):
+                    if self.elts[i] != other.elts[i]:
                         return False
                 return True
         else:
@@ -171,11 +171,11 @@ class ListType(Type):
         return "list:" + str(self.elts)
     def __eq__(self, other):
         if IS(other, ListType):
-            if len(self.elts) <> len(other.elts):
+            if len(self.elts) != len(other.elts):
                 return False
             else:
-                for i in xrange(len(self.elts)):
-                    if self.elts[i] <> other.elts[i]:
+                for i in range(len(self.elts)):
+                    if self.elts[i] != other.elts[i]:
                         return False
                 return True
         else:
@@ -272,7 +272,7 @@ class BindIterator:
     def __init__(self, p):
         self.p = p
         self.cur = 0
-    def next(self):
+    def __next__(self):
         if self.cur == 2:
             raise StopIteration
         elif self.cur == 0:
@@ -296,7 +296,7 @@ def inUnion(t, u):
 
 
 def removeType(t, u):
-    return filter(lambda x: x <> t, u)
+    return filter(lambda x: x != t, u)
 
 
 # combine two environments, make unions when necessary
@@ -306,7 +306,7 @@ def mergeEnv(env1, env2):
     ret = nil
     for p1 in env1:
         p2 = assq(first(p1), env2)
-        if p2 <> None:
+        if p2 != None:
             ret = ext(first(p1), union([rest(p1), rest(p2)]), ret)
     return ret
 
@@ -330,7 +330,7 @@ def bind(target, value, env):
     # elif IS(target, Tuple) or IS(target, List):
     #     if IS(value, TupleType) or IS(value, List):
     #         if len(target.elts) == len(value.elts):
-    #             for i in xrange(len(value.elts)):
+    #             for i in range(len(value.elts)):
     #                 env = bind(target.elts[i], value.elts[i], env)
     #             return env
     #         elif len(target.elts) < len(value.elts):
@@ -380,7 +380,7 @@ def invoke1(call, clo, env, stk):
 
     # bind positionals first
     poslen = min(len(func.args.args), len(call.args))
-    for i in xrange(poslen):
+    for i in range(poslen):
         t = infer(call.args[i], env, stk)
         pos = bind(func.args.args[i], t, pos)
 
@@ -393,7 +393,7 @@ def invoke1(call, clo, env, stk):
             return [err]
         else:
             ts = []
-            for i in xrange(len(func.args.args), len(call.args)):
+            for i in range(len(func.args.args), len(call.args)):
                 t = infer(call.args[i], env, stk)
                 ts = ts + t
             pos = bind(func.args.vararg, ts, pos)
@@ -403,30 +403,30 @@ def invoke1(call, clo, env, stk):
     for k in call.keywords:
         ts = infer(k.value, env, stk)
         tloc1 = lookup(k.arg, pos)
-        if tloc1 <> None:
+        if tloc1 != None:
             putInfo(call, TypeError('multiple values for keyword argument',
-                                     k.arg, loc))
+                                     k.arg, tloc1))
         elif k.arg not in ids:
             kwarg = bind(k.arg, ts, kwarg)
         else:
             pos = bind(k.arg, ts, pos)
 
     # put extras in kwarg or report them
-    if kwarg <> nil:
-        if func.args.kwarg <> None:
+    if kwarg != nil:
+        if func.args.kwarg != None:
             pos = bind(func.args.kwarg,
                        DictType(reverse(kwarg)),
                        pos)
         else:
             putInfo(call, TypeError("unexpected keyword arguements", kwarg))
-    elif func.args.kwarg <> None:
+    elif func.args.kwarg != None:
         pos = bind(func.args.kwarg, DictType(nil), pos)
 
     # bind defaults, avoid overwriting bound vars
     # types for defaults are already inferred when the function was defined
     i = len(func.args.args) - len(func.args.defaults)
     ndefaults = len(func.args.args)
-    for j in xrange(len(clo.defaults)):
+    for j in range(len(clo.defaults)):
         tloc = lookup(getId(func.args.args[i]), pos)
         if tloc == None:
             pos = bind(func.args.args[i], clo.defaults[j], pos)
@@ -564,7 +564,7 @@ def infer(exp, env, stk):
 
     elif IS(exp, Name):
         b = lookup(exp.id, env)
-        if (b <> None):
+        if (b != None):
             putInfo(exp, b)
             return b
         else:
@@ -631,8 +631,8 @@ def nodekey(node):
 def checkExp(exp):
     clear()
     ret = infer(exp, nil, nil)
-    if history.keys() <> []:
-        print "---------------------------- history ----------------------------"
+    if history.keys() != []:
+        print("---------------------------- history ----------------------------")
         for k in sorted(history.keys(), key=nodekey):
             print(k, ":", history[k])
         print("\n")
@@ -712,10 +712,6 @@ def printAst(node):
         ret = '"' + str(node.s) + '"'
     elif (IS(node, Return)):
         ret = "return " + repr(node.value)
-    elif (IS(node, Print)):
-        ret = ("print(" + (str(node.dest)
-               + ", " if (node.dest!=None) else "")
-               + printList(node.values) + ")")
     elif (IS(node, Expr)):
         ret = "expr:" + str(node.value)
     elif (IS(node, BinOp)):
