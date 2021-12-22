@@ -7,20 +7,17 @@ from ast import *
 from lists import *
 
 
-
-
 ####################################################################
 ## global parameters
 ####################################################################
 IS = isinstance
 
 
-
 ####################################################################
 ## utilities
 ####################################################################
 def iter_fields(node):
-    """Iterate over all existing fields, excluding 'ctx'."""
+    '''Iterate over all existing fields, excluding 'ctx'.'''
     for field in node._fields:
         try:
             if field != 'ctx':
@@ -29,35 +26,40 @@ def iter_fields(node):
             pass
 
 # for debugging
+
+
 def sz(s):
-    return nodeSize(parse(s), True)
+    # return node_size(parse(s), True)
+    return 0
+
 
 def dp(s):
     return map(dump, parse(s).body)
 
+
 def pf(file):
     import cProfile
-    cProfile.run("sonar(" + file + ")", sort="cumulative")
-
+    cProfile.run('sonar(' + file + ')', sort='cumulative')
 
 
 ####################################################################
 ## test on AST nodes
 ####################################################################
-def isAtom(x):
+def is_atom(x):
     return type(x) in [int, str, bool, float]
 
-def isDef(node):
+
+def is_def(node):
     return IS(node, FunctionDef) or IS(node, ClassDef)
-
-
 
 
 ##################################################################
 # per-node information store
 ##################################################################
 history = {}
-def putInfo(exp, item):
+
+
+def put_info(exp, item):
     if exp in history:
         seen = history[exp]
     else:
@@ -65,10 +67,8 @@ def putInfo(exp, item):
     history[exp] = union([seen, item])
 
 
-def getInfo(exp):
+def get_info(exp):
     return history[exp]
-
-
 
 
 ##################################################################
@@ -78,15 +78,18 @@ class Type:
     pass
 
 
-nUnknown = 0
+unknown_count = 0
+
+
 class UnknownType(Type):
     def __init__(self, name=None):
-        global nUnknown
+        global unknown_count
         if name != None:
-            self.name = name + str(nUnknown)
+            self.name = name + str(unknown_count)
         else:
-            self.name = '_' + str(nUnknown)
-        nUnknown += 1
+            self.name = '_' + str(unknown_count)
+        unknown_count += 1
+
     def __repr__(self):
         return str(self.name)
 
@@ -94,13 +97,16 @@ class UnknownType(Type):
 class PrimType(Type):
     def __init__(self, name):
         self.name = name
+
     def __repr__(self):
         return str(self.name)
+
     def __eq__(self, other):
         if IS(other, PrimType):
             return self.name == other.name
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -108,29 +114,35 @@ class PrimType(Type):
 class ClassType(Type):
     def __init__(self, name):
         self.name = name
+
     def __repr__(self):
-        return "class:" + self.name
+        return 'class:' + self.name
+
     def __eq__(self, other):
         if IS(other, ClassType):
             return self.name == other.name
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
 
 class FuncType(Type):
-    def __init__(self, fromtype, totype):
-        self.fromtype = fromtype
-        self.totype = totype
+    def __init__(self, from_type, to_type):
+        self.from_type = from_type
+        self.to_type = to_type
+
     def __repr__(self):
-        return str(self.fromtype) + " -> " + str(self.totype)
+        return str(self.from_type) + ' -> ' + str(self.to_type)
+
     def __eq__(self, other):
         if IS(other, FuncType):
-            return ((self.fromtype == other.fromtype) and
-                    self.totype == other.totype)
+            return ((self.from_type == other.from_type) and
+                    self.to_type == other.to_type)
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -140,6 +152,7 @@ class Closure(Type):
         self.func = func
         self.env = env
         self.defaults = []
+
     def __repr__(self):
         return str(self.func)
 
@@ -147,8 +160,10 @@ class Closure(Type):
 class TupleType(Type):
     def __init__(self, elts):
         self.elts = elts
+
     def __repr__(self):
-        return "tup:" + str(self.elts)
+        return 'tup:' + str(self.elts)
+
     def __eq__(self, other):
         if IS(other, TupleType):
             if len(self.elts) != len(other.elts):
@@ -160,6 +175,7 @@ class TupleType(Type):
                 return True
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -167,8 +183,10 @@ class TupleType(Type):
 class ListType(Type):
     def __init__(self, elts):
         self.elts = elts
+
     def __repr__(self):
-        return "list:" + str(self.elts)
+        return 'list:' + str(self.elts)
+
     def __eq__(self, other):
         if IS(other, ListType):
             if len(self.elts) != len(other.elts):
@@ -180,6 +198,7 @@ class ListType(Type):
                 return True
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -187,8 +206,9 @@ class ListType(Type):
 class DictType(Type):
     def __init__(self, dic):
         self.dic = dic
+
     def __repr__(self):
-        return "dict:" + str(self.dic)
+        return 'dict:' + str(self.dic)
 
     # any hashable value can be used as keys
     # any object can be used as values
@@ -198,6 +218,7 @@ class DictType(Type):
             return True
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -205,8 +226,9 @@ class DictType(Type):
 class UnionType(Type):
     def __init__(self, elts):
         self.elts = elts
+
     def __repr__(self):
-        return "U:" + str(self.elts)
+        return 'U:' + str(self.elts)
 
 
 # singleton primtive types
@@ -215,7 +237,7 @@ bottomType = PrimType('_|_')            # non-terminating recursion
 
 
 # need to rewrite this when we have recursive types
-def typeEqual(t1, t2):
+def type_equal(t1, t2):
     if IS(t1, list) and IS(t2, list):
         for bd1 in t1:
             if bd1 not in t2:
@@ -225,10 +247,10 @@ def typeEqual(t1, t2):
         return t1 == t2
 
 
-def subtypeBindings(rec1, rec2):
+def subtype_bindings(rec1, rec2):
     def find(a, rec2):
         for b in rec2:
-            if (first(a) == first(b)) and typeEqual(rest(a), rest(b)):
+            if (first(a) == first(b)) and type_equal(rest(a), rest(b)):
                 return True
         return False
     for a in rec1:
@@ -250,7 +272,6 @@ def union(ts):
     return u
 
 
-
 ####################################################################
 ## type inferencer
 ####################################################################
@@ -258,20 +279,22 @@ class Bind:
     def __init__(self, typ, loc):
         self.typ = typ
         self.loc = loc
+
     def __repr__(self):
-        return "(" + str(self.typ) + " <~~ " + str(self.loc) + ")"
+        return '(' + str(self.typ) + ' <~~ ' + str(self.loc) + ')'
+
     def __iter__(self):
         return BindIterator(self)
+
     def __eq__(self, other):
-        return (IS(other, Bind) and
-                self.typ == other.typ and
-                self.loc == other.loc)
+        return IS(other, Bind) and self.typ == other.typ and self.loc == other.loc
 
 
 class BindIterator:
     def __init__(self, p):
         self.p = p
         self.cur = 0
+
     def __next__(self):
         if self.cur == 2:
             raise StopIteration
@@ -283,26 +306,26 @@ class BindIterator:
             return self.p.loc
 
 
-def typeOnly(bs):
+def type_only(bs):
     return union(bs)
 
 
 # test whether a type is in a union
-def inUnion(t, u):
+def in_union(t, u):
     for t2 in u:
         if t == t2:
             return True
     return False
 
 
-def removeType(t, u):
+def remove_type(t, u):
     return filter(lambda x: x != t, u)
 
 
 # combine two environments, make unions when necessary
 # only assocs appear in both envs are preserved
 # use a variable bound in only one branch will cause type error
-def mergeEnv(env1, env2):
+def merge_env(env1, env2):
     ret = nil
     for p1 in env1:
         p2 = assq(first(p1), env2)
@@ -313,7 +336,7 @@ def mergeEnv(env1, env2):
 
 # compare both str's and Name's for equivalence, because
 # keywords are str's (bad design of the ast)
-def getId(x):
+def get_id(x):
     if IS(x, Name):
         return x.id
     else:
@@ -323,8 +346,8 @@ def getId(x):
 def bind(target, value, env):
     if IS(target, Name) or IS(target, str):
         u = value
-        putInfo(target, u)
-        return ext(getId(target), u, env)
+        put_info(target, u)
+        return ext(get_id(target), u, env)
 
     # ignored for now
     # elif IS(target, Tuple) or IS(target, List):
@@ -334,24 +357,24 @@ def bind(target, value, env):
     #                 env = bind(target.elts[i], value.elts[i], env)
     #             return env
     #         elif len(target.elts) < len(value.elts):
-    #             putInfo(target, ValueError('too many values to unpack'))
+    #             put_info(target, ValueError('too many values to unpack'))
     #             return env
     #         else:
-    #             putInfo(target, ValueError('too few values to unpack'))
+    #             put_info(target, ValueError('too few values to unpack'))
     #             return env
     #     else:
-    #         putInfo(value, TypeError('non-iterable object'))
+    #         put_info(value, TypeError('non-iterable object'))
     #         return env
     else:
-        putInfo(target, SyntaxError("not assignable"))
+        put_info(target, SyntaxError('not assignable'))
         return env
 
 
-def onStack(call, args, stk):
+def on_stack(call, args, stk):
     for p1 in stk:
         call2 = first(p1)
         args2 = rest(p1)
-        if call == call2 and subtypeBindings(args, args2):
+        if call == call2 and subtype_bindings(args, args2):
             return True
     return False
 
@@ -370,7 +393,7 @@ def invoke1(call, clo, env, stk):
         for k in call.keywords:
             t2 = infer(k.value, env, stk)
         err = TypeError('calling non-callable', clo)
-        putInfo(call, err)
+        put_info(call, err)
         return [err]
 
     func = clo.func
@@ -389,7 +412,7 @@ def invoke1(call, clo, env, stk):
     if len(call.args) > len(func.args.args):
         if func.args.vararg == None:
             err = TypeError('excess arguments to function')
-            putInfo(call, err)
+            put_info(call, err)
             return [err]
         else:
             ts = []
@@ -399,12 +422,12 @@ def invoke1(call, clo, env, stk):
             pos = bind(func.args.vararg, ts, pos)
 
     # bind keywords, collect kwarg
-    ids = map(getId, func.args.args)
+    ids = map(get_id, func.args.args)
     for k in call.keywords:
         ts = infer(k.value, env, stk)
         tloc1 = lookup(k.arg, pos)
         if tloc1 != None:
-            putInfo(call, TypeError('multiple values for keyword argument',
+            put_info(call, TypeError('multiple values for keyword argument',
                                      k.arg, tloc1))
         elif k.arg not in ids:
             kwarg = bind(k.arg, ts, kwarg)
@@ -418,7 +441,7 @@ def invoke1(call, clo, env, stk):
                        DictType(reverse(kwarg)),
                        pos)
         else:
-            putInfo(call, TypeError("unexpected keyword arguements", kwarg))
+            put_info(call, TypeError('unexpected keyword arguements', kwarg))
     elif func.args.kwarg != None:
         pos = bind(func.args.kwarg, DictType(nil), pos)
 
@@ -427,40 +450,38 @@ def invoke1(call, clo, env, stk):
     i = len(func.args.args) - len(func.args.defaults)
     ndefaults = len(func.args.args)
     for j in range(len(clo.defaults)):
-        tloc = lookup(getId(func.args.args[i]), pos)
+        tloc = lookup(get_id(func.args.args[i]), pos)
         if tloc == None:
             pos = bind(func.args.args[i], clo.defaults[j], pos)
             i += 1
 
     # finish building the input type
-    fromtype = maplist(lambda p: Pair(first(p), typeOnly(rest(p))), pos)
+    from_type = maplist(lambda p: Pair(first(p), type_only(rest(p))), pos)
 
     # check whether the same call site is on stack with same input types
     # if so, we are back to a loop, terminate
-    if onStack(call, fromtype, stk):
+    if on_stack(call, from_type, stk):
         return [bottomType]
 
     # push the call site onto the stack and analyze the function body
-    stk = ext(call, fromtype, stk)
+    stk = ext(call, from_type, stk)
     fenv = append(pos, fenv)
     to = infer(func.body, fenv, stk)
 
     # record the function type
-    putInfo(func, FuncType(reverse(fromtype), to))
+    put_info(func, FuncType(reverse(from_type), to))
     return to
-
 
 
 # invoke a union of closures. call invoke1 on each of them and collect
 # their return types into a union
 def invoke(call, env, stk):
     clos = infer(call.func, env, stk)
-    totypes = []
+    to_types = []
     for clo in clos:
         t = invoke1(call, clo, env, stk)
-        totypes = totypes + t
-    return totypes
-
+        to_types = to_types + t
+    return to_types
 
 
 # pre-bind names to functions in sequences (should add classes later)
@@ -472,18 +493,16 @@ def close(ls, env):
     return env
 
 
-
-def isTerminating(t):
-    return not inUnion(contType, t)
+def is_terminating(t):
+    return not in_union(contType, t)
 
 
 def finalize(t):
-    return removeType(contType, t)
-
+    return remove_type(contType, t)
 
 
 # infer a sequence of statements
-def inferSeq(exp, env, stk):
+def infer_seq(exp, env, stk):
 
     if exp == []:                       # reached end without return
         return ([contType], env)
@@ -491,25 +510,25 @@ def inferSeq(exp, env, stk):
     e = exp[0]
     if IS(e, If):
         tt = infer(e.test, env, stk)
-        (t1, env1) = inferSeq(e.body, close(e.body, env), stk)
-        (t2, env2) = inferSeq(e.orelse, close(e.orelse, env), stk)
+        (t1, env1) = infer_seq(e.body, close(e.body, env), stk)
+        (t2, env2) = infer_seq(e.orelse, close(e.orelse, env), stk)
 
-        if isTerminating(t1) and isTerminating(t2):                   # both terminates
+        if is_terminating(t1) and is_terminating(t2):                   # both terminates
             for e2 in exp[1:]:
-                putInfo(e2, TypeError('unreachable code'))
+                put_info(e2, TypeError('unreachable code'))
             return (union([t1, t2]), env)
 
-        elif isTerminating(t1) and not isTerminating(t2):             # t1 terminates
-            (t3, env3) = inferSeq(exp[1:], env2, stk)
+        elif is_terminating(t1) and not is_terminating(t2):             # t1 terminates
+            (t3, env3) = infer_seq(exp[1:], env2, stk)
             t2 = finalize(t2)
             return (union([t1, t2, t3]), env3)
 
-        elif not isTerminating(t1) and isTerminating(t2):             # t2 terminates
-            (t3, env3) = inferSeq(exp[1:], env1, stk)
+        elif not is_terminating(t1) and is_terminating(t2):             # t2 terminates
+            (t3, env3) = infer_seq(exp[1:], env1, stk)
             t1 = finalize(t1)
             return (union([t1, t2, t3]), env3)
         else:                                                         # both non-terminating
-            (t3, env3) = inferSeq(exp[1:], mergeEnv(env1, env2), stk)
+            (t3, env3) = infer_seq(exp[1:], merge_env(env1, env2), stk)
             t1 = finalize(t1)
             t2 = finalize(t2)
             return (union([t1, t2, t3]), env3)
@@ -518,7 +537,7 @@ def inferSeq(exp, env, stk):
         t = infer(e.value, env, stk)
         for x in e.targets:
             env = bind(x, t, env)
-        return inferSeq(exp[1:], env, stk)
+        return infer_seq(exp[1:], env, stk)
 
     elif IS(e, FunctionDef):
         cs = lookup(e.name, env)
@@ -527,22 +546,21 @@ def inferSeq(exp, env, stk):
         for d in e.args.defaults:                # infer types for default arguments
             dt = infer(d, env, stk)
             c.defaults.append(dt)
-        return inferSeq(exp[1:], env, stk)
+        return infer_seq(exp[1:], env, stk)
 
     elif IS(e, Return):
         t1 = infer(e.value, env, stk)
-        (t2, env2) = inferSeq(exp[1:], env, stk)
-        for e2 in exp[1:] :
-            putInfo(e2, TypeError('unreachable code'))
+        (t2, env2) = infer_seq(exp[1:], env, stk)
+        for e2 in exp[1:]:
+            put_info(e2, TypeError('unreachable code'))
         return (t1, env)
 
     elif IS(e, Expr):
         t1 = infer(e.value, env, stk)
-        return inferSeq(exp[1:], env, stk)
+        return infer_seq(exp[1:], env, stk)
 
     else:
         raise TypeError('recognized node in effect context', e)
-
 
 
 # main type inferencer
@@ -553,7 +571,7 @@ def infer(exp, env, stk):
 
     elif IS(exp, list):
         env = close(exp, env)
-        (t, ignoreEnv) = inferSeq(exp, env, stk)    # env ignored (out of scope)
+        (t, ignoreEnv) = infer_seq(exp, env, stk)    # env ignored (out of scope)
         return t
 
     elif IS(exp, Num):
@@ -565,14 +583,14 @@ def infer(exp, env, stk):
     elif IS(exp, Name):
         b = lookup(exp.id, env)
         if (b != None):
-            putInfo(exp, b)
+            put_info(exp, b)
             return b
         else:
             try:
                 t = type(eval(exp.id))     # try use information from Python interpreter
                 return [PrimType(t)]
             except NameError as err:
-                putInfo(exp, err)
+                put_info(exp, err)
                 return [err]
 
     elif IS(exp, Lambda):
@@ -604,20 +622,19 @@ def infer(exp, env, stk):
         return [UnknownType()]
 
 
-
 ##################################################################
 # drivers(wrappers)
 ##################################################################
-def parseFile(filename):
-    f = open(filename, 'r');
+def parse_file(filename):
+    f = open(filename, 'r')
     return parse(f.read())
 
 
 # clean up globals
 def clear():
     history.clear()
-    global nUnknown
-    nUnknown = 0
+    global unknown_count
+    unknown_count = 0
 
 
 def nodekey(node):
@@ -628,26 +645,26 @@ def nodekey(node):
 
 
 # check a single (parsed) expression
-def checkExp(exp):
+def check_exp(exp):
     clear()
     ret = infer(exp, nil, nil)
     if history.keys() != []:
-        print("---------------------------- history ----------------------------")
+        print('---------------------------- history ----------------------------')
         for k in sorted(history.keys(), key=nodekey):
-            print(k, ":", history[k])
-        print("\n")
+            print(k, ':', history[k])
+        print('\n')
+    return ret
 
 
 # check a string
-def checkString(s):
-    return checkExp(parse(s))
+def check_string(s):
+    return check_exp(parse(s))
 
 
 # check a file
-def checkFile(filename):
-    f = open(filename, 'r');
-    checkString(f.read())
-
+def check_file(filename):
+    f = open(filename, 'r')
+    return check_string(f.read())
 
 
 ###################################################################
@@ -675,76 +692,77 @@ def dump(node, annotate_fields=True, include_attributes=False):
     return _format(node)
 
 
-def printList(ls):
+def print_list(ls):
     if (ls == None or ls == []):
-        return ""
+        return ''
     elif (len(ls) == 1):
         return str(ls[0])
     else:
         return str(ls)
 
 
-def printAst(node):
-    if (IS(node, Module)):
-        ret = "module:" + str(node.body)
-    elif (IS(node, FunctionDef)):
-        ret = "fun:" + str(node.name)
-    elif (IS(node, ClassDef)):
-        ret = "class:" + str(node.name)
-    elif (IS(node, Call)):
-        ret = ("call:" + str(node.func)
-               + ":(" + printList(node.args) + ")")
-    elif (IS(node, Assign)):
-        ret = ("(" + printList(node.targets)
-               + " <- " + printAst(node.value) + ")")
-    elif (IS(node, If)):
-        ret = ("if " + str(node.test)
-               + ":" + printList(node.body)
-               + ":" + printList(node.orelse))
-    elif (IS(node, Compare)):
-        ret = (str(node.left) + ":" + printList(node.ops)
-               + ":" + printList(node.comparators))
-    elif (IS(node, Name)):
+def print_ast(node):
+    if IS(node, Module):
+        ret = 'module:' + str(node.body)
+    elif IS(node, FunctionDef):
+        ret = 'fun:' + str(node.name)
+    elif IS(node, ClassDef):
+        ret = 'class:' + str(node.name)
+    elif IS(node, Call):
+        ret = ('call:' + str(node.func)
+               + ':(' + print_list(node.args) + ')')
+    elif IS(node, Assign):
+        ret = ('(' + print_list(node.targets)
+               + ' <- ' + print_ast(node.value) + ')')
+    elif IS(node, If):
+        ret = ('if ' + str(node.test)
+               + ':' + print_list(node.body)
+               + ':' + print_list(node.orelse))
+    elif IS(node, Compare):
+        ret = (str(node.left) + ':' + print_list(node.ops)
+               + ':' + print_list(node.comparators))
+    elif IS(node, Name):
         ret = str(node.id)
-    elif (IS(node, Num)):
+    elif IS(node, Num):
         ret = str(node.n)
-    elif (IS(node, Str)):
-        ret = '"' + str(node.s) + '"'
-    elif (IS(node, Return)):
-        ret = "return " + repr(node.value)
-    elif (IS(node, Expr)):
-        ret = "expr:" + str(node.value)
-    elif (IS(node, BinOp)):
-        ret = (str(node.left) + " "
-               + str(node.op) + " "
+    elif IS(node, Str):
+        ret = f'\"{str(node.s)}\"'
+    elif IS(node, Return):
+        ret = 'return ' + repr(node.value)
+    elif IS(node, Expr):
+        ret = 'expr:' + str(node.value)
+    elif IS(node, BinOp):
+        ret = (str(node.left) + ' '
+               + str(node.op) + ' '
                + str(node.right))
-    elif (IS(node, Mult)):
+    elif IS(node, Mult):
         ret = '*'
-    elif (IS(node, Add)):
+    elif IS(node, Add):
         ret = '+'
-    elif (IS(node, Pass)):
-        ret = "pass"
-    elif IS(node,list):
-        ret = printList(node)
+    elif IS(node, Pass):
+        ret = 'pass'
+    elif IS(node, list):
+        ret = print_list(node)
     else:
         ret = str(type(node))
 
     if hasattr(node, 'lineno'):
-        return (re.sub("@[0-9]+", '', ret)
-                + "@" + str(node.lineno))
+        return (re.sub('@[0-9]+', '', ret)
+                + '@' + str(node.lineno))
     else:
         return ret
 
 
-def installPrinter():
+def install_printer():
     import inspect
     import ast
     for name, obj in inspect.getmembers(ast):
         if (inspect.isclass(obj) and not (obj == AST)):
-            obj.__repr__ = printAst
+            obj.__repr__ = print_ast
 
-installPrinter()
+
+install_printer()
 
 
 # test the checker on a file
-checkFile('tests/chain.py')
+check_file('tests/chain.py')
